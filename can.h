@@ -145,7 +145,7 @@ typedef enum {
 
 #else
 
-	#if SUPPORT_EXTENDED_CANID
+	#if SUPPORT_EXTENDED_CANID	
 		#define MCP2515_FILTER_EXTENDED(id)	\
 				(uint8_t)  ((uint32_t) (id) >> 21), \
 				(uint8_t)((((uint32_t) (id) >> 13) & 0xe0) | (1<<3) | \
@@ -153,7 +153,7 @@ typedef enum {
 				(uint8_t)  ((uint32_t) (id) >> 8), \
 				(uint8_t)  ((uint32_t) (id))
 	#endif
-
+	
 	#define	MCP2515_FILTER(id) \
 			(uint8_t)((uint32_t) id >> 3), \
 			(uint8_t)((uint32_t) id << 5), \
@@ -168,7 +168,7 @@ typedef enum {
  */
 typedef struct
 {
-	#if SUPPORT_EXTENDED_CANID
+	#if SUPPORT_EXTENDED_CANID	
 		uint32_t id;				//!< ID der Nachricht (11 oder 29 Bit)
 		struct {
 			int rtr : 1;			//!< Remote-Transmit-Request-Frame?
@@ -180,10 +180,10 @@ typedef struct
 			int rtr : 1;			//!< Remote-Transmit-Request-Frame?
 		} flags;
 	#endif
-
+	
 	uint8_t length;				//!< Anzahl der Datenbytes
 	uint8_t data[8];			//!< Die Daten der CAN Nachricht
-
+	
 	#if SUPPORT_TIMESTAMPS
 		uint16_t timestamp;
 	#endif
