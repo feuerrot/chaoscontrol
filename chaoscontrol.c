@@ -1,7 +1,5 @@
 // coding: utf-8
 #include "chaoscontrol.h"
-#include <stdint.h>
-#include <stdbool.h>
 
 uint32_t cc_id_to_int(cc_id_t canid){
 	uint32_t ret;
@@ -21,6 +19,11 @@ cc_id_t int_to_cc_id(uint32_t canid){
 	return ret;
 }
 
-
+void cc_id_set(cc_id_t* canid, uint16_t idFrom, uint16_t idTo, uint8_t idFlagPrio, uint8_t idFlagService){
+	canid->idFrom = idFrom;
+	canid->idTo	= idTo;
+	canid->idFlagPrio = idFlagPrio;
+	canid->idFlagService = idFlagService;
+}
 
 

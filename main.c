@@ -4,9 +4,9 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include <avr/pgmspace.h>
+#include "chaoscontrol.h"
 #include "can.h"
 #include "config.h"
-#include "chaoscontrol.h"
 
 volatile uint8_t dauer;
 volatile struct {
@@ -15,8 +15,6 @@ volatile struct {
 } flags;
 
 uint8_t incrementator;
-
-cc_id_t canid;
 
 uint8_t _sec(uint8_t data0, cc_id_t id){
 	can_t msg;
@@ -85,20 +83,18 @@ void init(void) {
 	can_set_mode(LOOPBACK_MODE);
 	CAN_INIT_DELAY;
 
-	canid.idFrom = 0x7ff;
-	canid.idTo = 0x7ff;
-	canid.idFlagService = 0x3f;
 
 	//Interrupts aktivieren, jetzt kein _delay_* mehr!
 	_timer2_init();
 	_timer1_on(0x007f);
-
 	GICR |= (1<<INT1);
 	sei();
 }
 
 int main(void) {
 	init();
+	cc_id_t canid;
+	cc_id_set(&canid, 0x7ff, 0x7ff, 0x00, 0x3f);
 	_sec(incrementator++, canid);
 	while(1) {
 		PORTA ^= (1<<PA0);
