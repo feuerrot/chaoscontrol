@@ -1,3 +1,4 @@
+// coding: utf-8
 #ifndef	CONFIG_H
 #define	CONFIG_H
 

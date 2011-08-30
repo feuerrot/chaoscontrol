@@ -6,26 +6,21 @@
 #include <avr/pgmspace.h>
 #include "can.h"
 #include "config.h"
+#include "chaoscontrol.h"
 
-volatile uint8_t _flags, dauer;
+volatile uint8_t dauer;
+volatile struct {
+	unsigned iCAN:1;	//Flag für neue CAN-Nachricht
+//	unsigned iFOO:42;	//Flag für frische Pizza
+} flags;
+
 uint8_t incrementator;
 
-ISR(INT1_vect){
-	_flags |= 0x01;
-}
+cc_id_t canid;
 
-ISR(TIMER2_COMP_vect){
-	if (dauer > 0){
-		dauer--;
-	} else {
-		dauer = 10;
-		_timer1_toggle();
-	}
-}
-
-uint8_t _sec(uint8_t data0){
+uint8_t _sec(uint8_t data0, cc_id_t id){
 	can_t msg;
-	msg.id = CHAOSCONTROLID_EP;
+	msg.id = cc_id_to_int(id);
 	msg.flags.rtr = 0;
 	msg.flags.extended = 1;
 	msg.length = 1;
@@ -35,7 +30,7 @@ uint8_t _sec(uint8_t data0){
 
 prog_uint8_t can_filter[] = {
 	// Group 0
-	MCP2515_FILTER_EXTENDED(CHAOSCONTROLID_EP),		// Filter 0
+	MCP2515_FILTER_EXTENDED(0b00000000000000000000000000000),		// Filter 0
 	MCP2515_FILTER_EXTENDED(0b00000000000000000000000000000),		// Filter 1
 
 	// Group 1
@@ -44,7 +39,7 @@ prog_uint8_t can_filter[] = {
 	MCP2515_FILTER_EXTENDED(0b11111111111111111111111111111),		// Filter 4
 	MCP2515_FILTER_EXTENDED(0b11111111111111111111111111111),		// Filter 5
 
-	MCP2515_FILTER_EXTENDED(0b00000000000111111111110000000),		// Mask 0 (for group 0)
+	MCP2515_FILTER_EXTENDED(0b00000000000000000000000000000),		// Mask 0 (for group 0)
 	MCP2515_FILTER_EXTENDED(0b11111111111111111111111111111),		// Mask 1 (for group 1)
 
 };
@@ -78,7 +73,7 @@ void init(void) {
 	DDRB |= (1<<PB0)|(1<<PB1)|(1<<PB2)|(1<<PB3);
 	DDRD &= ~(1<<PD3); //PD3 ist der Eingang für INT1
 
-	//JTAG ausschalten, indem man zwe Mal hintereinander das Bit setzt
+	//JTAG ausschalten, indem man zwei Mal hintereinander das Bit setzt
 	MCUCSR |= (1<<JTD);
 	MCUCSR |= (1<<JTD);
 
@@ -90,6 +85,10 @@ void init(void) {
 	can_set_mode(LOOPBACK_MODE);
 	CAN_INIT_DELAY;
 
+	canid.idFrom = 0x7ff;
+	canid.idTo = 0x7ff;
+	canid.idFlagService = 0x3f;
+
 	//Interrupts aktivieren, jetzt kein _delay_* mehr!
 	_timer2_init();
 	_timer1_on(0x007f);
@@ -100,18 +99,32 @@ void init(void) {
 
 int main(void) {
 	init();
-	_sec(incrementator++);
+	_sec(incrementator++, canid);
 	while(1) {
 		PORTA ^= (1<<PA0);
-		if (_flags & 0x01){
-			_flags &= ~0x01;
+		if (flags.iCAN){
+			flags.iCAN = 0;
 			can_t canmsg;
 			if(can_get_message(&canmsg) && (canmsg.length > 0)){
 				PORTA ^= (1<<PA1);
 				PORTB = (PORTB & 0xf0) | (canmsg.data[(canmsg.length)-1] & 0x0f); //Obere 4 Bits: Inhalt von PORTB, untere 4 Bits: untere 4 Bits des letzten Bytes der Cannachricht
-				_sec(incrementator++);
+				_sec(incrementator++, canid);
 			}
 		}
 	}
 	return 0;
 }
+
+ISR(INT1_vect){
+	flags.iCAN = 1;
+}
+
+ISR(TIMER2_COMP_vect){
+	if (dauer > 0){
+		dauer--;
+	} else {
+		dauer = 10;
+		_timer1_toggle();
+	}
+}
+
