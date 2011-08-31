@@ -13,8 +13,8 @@ volatile struct {
 	unsigned iCAN:1;	//Flag für neue CAN-Nachricht
 //	unsigned iFOO:42;	//Flag für frische Pizza
 } flags;
-
 uint8_t incrementator;
+cc_id_t canid;
 
 uint8_t _sec(uint8_t data0, cc_id_t id){
 	can_t msg;
@@ -62,14 +62,13 @@ void init(void) {
 
 
 	//Interrupts aktivieren, jetzt kein _delay_* mehr!
-	_piezo_init(0x003f,0x1f);
+	_piezo_init(0x003f,0x2f);
 	GICR |= (1<<INT1);
 	sei();
 }
 
 int main(void) {
 	init();
-	cc_id_t canid;
 	cc_id_set(&canid, 0x7ff, 0x7ff, 0x00, 0x3f);
 	_sec(incrementator++, canid);
 	_piezo_on();
