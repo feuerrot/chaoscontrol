@@ -7,8 +7,8 @@
 #include "chaoscontrol.h"
 #include "can.h"
 #include "config.h"
+#include "piezo.h"
 
-volatile uint8_t dauer;
 volatile struct {
 	unsigned iCAN:1;	//Flag für neue CAN-Nachricht
 //	unsigned iFOO:42;	//Flag für frische Pizza
@@ -42,29 +42,6 @@ prog_uint8_t can_filter[] = {
 
 };
 
-void _timer1_on(uint16_t ocr1a){
-	OCR1A = ocr1a;
-	TCCR1A |= (1<<COM1A0);
-  	TCCR1B |= (1<<WGM12)|(1<<CS11);
-	DDRD   |= (1<<PD5);
-}
-
-void _timer1_off(void){
-	TCCR1A &= ~(1<<COM1A0);
-	TCCR1B &= ~((1<<WGM12)|(1<<CS11));
-	DDRD   &= ~(1<<PD5);
-}
-
-void _timer1_toggle(void){
-	DDRD ^= (1<<PD5);
-}
-
-void _timer2_init(void){
-	OCR2 = 155;
-	TCCR2 |= (1<<WGM21)|(1<<CS21)|(1<<CS20);
-	TIMSK |= (1<<OCIE2);
-}
-
 void init(void) {
 	//PA0-1, PB0-3 als Ausgänge
 	DDRA |= (1<<PA0)|(1<<PA1);
@@ -85,8 +62,7 @@ void init(void) {
 
 
 	//Interrupts aktivieren, jetzt kein _delay_* mehr!
-	_timer2_init();
-	_timer1_on(0x007f);
+	_piezo_init(0x003f,0x1f);
 	GICR |= (1<<INT1);
 	sei();
 }
@@ -96,6 +72,7 @@ int main(void) {
 	cc_id_t canid;
 	cc_id_set(&canid, 0x7ff, 0x7ff, 0x00, 0x3f);
 	_sec(incrementator++, canid);
+	_piezo_on();
 	while(1) {
 		PORTA ^= (1<<PA0);
 		if (flags.iCAN){
@@ -114,13 +91,3 @@ int main(void) {
 ISR(INT1_vect){
 	flags.iCAN = 1;
 }
-
-ISR(TIMER2_COMP_vect){
-	if (dauer > 0){
-		dauer--;
-	} else {
-		dauer = 10;
-		_timer1_toggle();
-	}
-}
-
