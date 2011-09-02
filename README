@@ -1,0 +1,4 @@
+Das soll mal Zeug werden, um irgendwann™ das Chaosdorf per CAN steuern zu können.
+Auf einem ATMega32 läuft etwas c zur CAN-lib von [1] und versendet Nachrichten über den Bus.
+
+[1] http://www.kreatives-chaos.com/artikel/universelle-can-bibliothek
