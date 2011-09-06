@@ -1,0 +1,4 @@
+* Queue für die CAN-Nachrichten
+* Chaoscontrolprotokoll planen und implementieren, bisher ist da ja eher
+  weniger Planung vorhanden.
+* Debounce für Inputs einbauen
