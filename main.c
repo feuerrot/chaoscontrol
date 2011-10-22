@@ -7,7 +7,7 @@
 #include "chaoscontrol.h"
 #include "can.h"
 #include "config.h"
-#include "piezo.h"
+#include "74hc595.h"
 
 volatile struct {
 	unsigned iCAN:1;	//Flag für neue CAN-Nachricht

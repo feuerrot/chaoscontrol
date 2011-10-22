@@ -41,7 +41,7 @@
 
 
 # MCU name
-MCU = atmega32
+MCU = atmega8
 
 
 # Processor frequency.
@@ -62,7 +62,7 @@ MCU = atmega32
 #         F_CPU = 16000000
 #         F_CPU = 18432000
 #         F_CPU = 20000000
-F_CPU =  1000000
+F_CPU =  8000000
 
 
 # Output format. (can be srec, ihex, binary)
@@ -80,7 +80,7 @@ OBJDIR = build
 
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = main.c chaoscontrol.c piezo.c
+SRC = main.c chaoscontrol.c
 
 
 # List C++ source files here. (C dependencies are automatically generated.)
