@@ -80,7 +80,7 @@ OBJDIR = build
 
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = main.c chaoscontrol.c piezo.c
+SRC = main.c chaoscontrol.c
 
 
 # List C++ source files here. (C dependencies are automatically generated.)

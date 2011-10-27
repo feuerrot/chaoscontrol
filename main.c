@@ -7,7 +7,6 @@
 #include "chaoscontrol.h"
 #include "can.h"
 #include "config.h"
-#include "piezo.h"
 
 volatile struct {
 	unsigned iCAN:1;	//Flag für neue CAN-Nachricht
@@ -57,12 +56,11 @@ void init(void) {
 	CAN_INIT_DELAY;
 	can_static_filter(can_filter);
 	CAN_INIT_DELAY;
-	can_set_mode(LOOPBACK_MODE);
+	can_set_mode(NORMAL_MODE);
 	CAN_INIT_DELAY;
 
 
 	//Interrupts aktivieren, jetzt kein _delay_* mehr!
-	_piezo_init(0x003f,0x2f);
 	GICR |= (1<<INT1);
 	sei();
 }
@@ -70,10 +68,9 @@ void init(void) {
 int main(void) {
 	init();
 	cc_id_set(&canid, 0x7ff, 0x7ff, 0x00, 0x3f);
-	_sec(incrementator++, canid);
-	_piezo_on();
 	while(1) {
-		PORTA ^= (1<<PA0);
+		_sec(incrementator++, canid);
+#if 0
 		if (flags.iCAN){
 			flags.iCAN = 0;
 			can_t canmsg;
@@ -83,6 +80,7 @@ int main(void) {
 				_sec(incrementator++, canid);
 			}
 		}
+#endif
 	}
 	return 0;
 }
