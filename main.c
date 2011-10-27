@@ -51,15 +51,13 @@ void init(void) {
 	_74hc595_init();
 	_74hc595_output(1);
 
-#if 0
 	//MCP2515 aktivieren, funktioniert ohne Delays nicht
 	can_init(BITRATE_1_MBPS);
 	CAN_INIT_DELAY;
 	can_static_filter(can_filter);
 	CAN_INIT_DELAY;
-	can_set_mode(LOOPBACK_MODE);
+	can_set_mode(NORMAL_MODE);
 	CAN_INIT_DELAY;
-#endif
 
 	//Interrupts aktivieren, jetzt kein _delay_* mehr!
 	GICR |= (1<<INT0);
@@ -71,17 +69,14 @@ int main(void) {
 //	cc_id_set(&canid, 0x7ff, 0x7ff, 0x00, 0x3f);
 //	_createcanmessage(incrementator++, canid);
 	while(1) {
-		_74hc595_send(incrementator++);
-		_delay_ms(100);
-#if 0
 		if (flags.iCAN){
 			flags.iCAN = 0;
 			can_t canmsg;
 			if(can_get_message(&canmsg) && (canmsg.length > 0)){
-				_createcanmessage(incrementator++, canid);
+				_74hc595_send(canmsg.data[canmsg.length-1]);
+//				_createcanmessage(incrementator++, canid);
 			}
 		}
-#endif
 	}
 	return 0;
 }
