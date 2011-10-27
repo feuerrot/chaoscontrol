@@ -70,6 +70,7 @@ int main(void) {
 	cc_id_set(&canid, 0x7ff, 0x7ff, 0x00, 0x3f);
 	while(1) {
 		_sec(incrementator++, canid);
+		_delay_ms(100);
 #if 0
 		if (flags.iCAN){
 			flags.iCAN = 0;
