@@ -10,10 +10,25 @@
 
 volatile struct {
 	unsigned iCAN:1;	//Flag für neue CAN-Nachricht
-//	unsigned iFOO:42;	//Flag für frische Pizza
 } flags;
-uint8_t incrementator;
+uint8_t incr;
 cc_id_t canid;
+
+char chars[]={
+0b10100000,
+0b10000110,
+0b11101000,
+0b10100100,
+0b11101101,
+0b11001101,
+0b11101110,
+0b10000101,
+0b11000010,
+0b11111111
+};
+
+char text[]={9,4,9,2,0,4,5,9,8,9,3,0,6,1};
+
 
 uint8_t _sec(uint8_t data0, cc_id_t id){
 	can_t msg;
@@ -52,7 +67,7 @@ void init(void) {
 	MCUCSR |= (1<<JTD);
 
 	//MCP2515 aktivieren, funktioniert ohne Delays nicht
-	can_init(BITRATE_1_MBPS);
+	can_init(BITRATE_125_KBPS);
 	CAN_INIT_DELAY;
 	can_static_filter(can_filter);
 	CAN_INIT_DELAY;
@@ -69,19 +84,11 @@ int main(void) {
 	init();
 	cc_id_set(&canid, 0x7ff, 0x7ff, 0x00, 0x3f);
 	while(1) {
-		_sec(incrementator++, canid);
-		_delay_ms(100);
-#if 0
-		if (flags.iCAN){
-			flags.iCAN = 0;
-			can_t canmsg;
-			if(can_get_message(&canmsg) && (canmsg.length > 0)){
-				PORTA ^= (1<<PA1);
-				PORTB = (PORTB & 0xf0) | (canmsg.data[(canmsg.length)-1] & 0x0f); //Obere 4 Bits: Inhalt von PORTB, untere 4 Bits: untere 4 Bits des letzten Bytes der Cannachricht
-				_sec(incrementator++, canid);
-			}
+		int i;
+		for (i=0; i<14; i++){
+			_sec(chars[text[i]], canid);
+			_delay_ms(300);
 		}
-#endif
 	}
 	return 0;
 }
