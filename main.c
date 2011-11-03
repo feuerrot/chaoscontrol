@@ -8,10 +8,13 @@
 #include "can.h"
 #include "config.h"
 #include "74hc595.h"
+#include "buffer.h"
 
 volatile struct {
-	unsigned iCAN:1;	//Flag für neue CAN-Nachricht
-//	unsigned iFOO:42;	//Flag für frische Pizza
+	unsigned iCAN:1;			//Flag für neue CAN-Nachricht
+	unsigned iErrorBufferIn:1;	//Flag für vollen Buffer
+	unsigned iErrorBufferOut:1;	//Flag für leeren Buffer
+//	unsigned iFOO:42;			//Flag für frische Pizza
 } flags;
 uint8_t incrementator;
 cc_id_t canid;
@@ -52,7 +55,7 @@ void init(void) {
 	_74hc595_output(1);
 
 	//MCP2515 aktivieren, funktioniert ohne Delays nicht
-	can_init(BITRATE_1_MBPS);
+	can_init(BITRATE_125_KBPS);
 	CAN_INIT_DELAY;
 	can_static_filter(can_filter);
 	CAN_INIT_DELAY;
@@ -65,22 +68,23 @@ void init(void) {
 }
 
 int main(void) {
-	init();
-//	cc_id_set(&canid, 0x7ff, 0x7ff, 0x00, 0x3f);
-//	_createcanmessage(incrementator++, canid);
-	while(1) {
-		if (flags.iCAN){
-			flags.iCAN = 0;
-			can_t canmsg;
-			if(can_get_message(&canmsg) && (canmsg.length > 0)){
-				_74hc595_send(canmsg.data[canmsg.length-1]);
-//				_createcanmessage(incrementator++, canid);
-			}
-		}
-	}
-	return 0;
+    init();
+    while(1) {
+        if (flags.iCAN){
+            flags.iCAN = 0;
+            can_t canmsg;
+            flags.iErrorBufferOut = !bufferout(&canmsg);
+            if(!flags.iErrorBufferOut)
+                _74hc595_send(canmsg.data[canmsg.length-1]);
+        }
+    }
+    return 0;
 }
 
 ISR(INT0_vect){
-	flags.iCAN = 1;
+    can_t canmsg;
+    can_get_message(&canmsg);
+    flags.iErrorBufferIn = !bufferin(canmsg);
+    flags.iCAN = 1;
 }
+
