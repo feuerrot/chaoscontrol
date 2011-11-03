@@ -7,15 +7,19 @@
 #include "chaoscontrol.h"
 #include "can.h"
 #include "config.h"
+#include "74hc595.h"
+#include "buffer.h"
 
 volatile struct {
-	unsigned iCAN:1;	//Flag für neue CAN-Nachricht
-//	unsigned iFOO:42;	//Flag für frische Pizza
+	unsigned iCAN:1;			//Flag für neue CAN-Nachricht
+	unsigned iErrorBufferIn:1;	//Flag für vollen Buffer
+	unsigned iErrorBufferOut:1;	//Flag für leeren Buffer
+//	unsigned iFOO:42;			//Flag für frische Pizza
 } flags;
 uint8_t incrementator;
 cc_id_t canid;
 
-uint8_t _sec(uint8_t data0, cc_id_t id){
+uint8_t _createcanmessage(uint8_t data0, cc_id_t id){
 	can_t msg;
 	msg.id = cc_id_to_int(id);
 	msg.flags.rtr = 0;
@@ -42,50 +46,45 @@ prog_uint8_t can_filter[] = {
 };
 
 void init(void) {
-	//PA0-1, PB0-3 als Ausgänge
-	DDRA |= (1<<PA0)|(1<<PA1);
-	DDRB |= (1<<PB0)|(1<<PB1)|(1<<PB2)|(1<<PB3);
-	DDRD &= ~(1<<PD3); //PD3 ist der Eingang für INT1
+	//PB235, PC01 als Ausgänge
+	DDRB |= (1<<PB2)|(1<<PB3)|(1<<PB5);
+	DDRD &= ~(1<<PD2); //PD2 ist der Eingang für INT1
 
-	//JTAG ausschalten, indem man zwei Mal hintereinander das Bit setzt
-	MCUCSR |= (1<<JTD);
-	MCUCSR |= (1<<JTD);
+	//Schieberegister initialisieren
+	_74hc595_init();
+	_74hc595_output(1);
 
 	//MCP2515 aktivieren, funktioniert ohne Delays nicht
-	can_init(BITRATE_1_MBPS);
+	can_init(BITRATE_125_KBPS);
 	CAN_INIT_DELAY;
 	can_static_filter(can_filter);
 	CAN_INIT_DELAY;
 	can_set_mode(NORMAL_MODE);
 	CAN_INIT_DELAY;
 
-
 	//Interrupts aktivieren, jetzt kein _delay_* mehr!
-	GICR |= (1<<INT1);
+	GICR |= (1<<INT0);
 	sei();
 }
 
 int main(void) {
-	init();
-	cc_id_set(&canid, 0x7ff, 0x7ff, 0x00, 0x3f);
-	while(1) {
-		_sec(incrementator++, canid);
-		_delay_ms(100);
-#if 0
-		if (flags.iCAN){
-			flags.iCAN = 0;
-			can_t canmsg;
-			if(can_get_message(&canmsg) && (canmsg.length > 0)){
-				PORTA ^= (1<<PA1);
-				PORTB = (PORTB & 0xf0) | (canmsg.data[(canmsg.length)-1] & 0x0f); //Obere 4 Bits: Inhalt von PORTB, untere 4 Bits: untere 4 Bits des letzten Bytes der Cannachricht
-				_sec(incrementator++, canid);
-			}
-		}
-#endif
-	}
-	return 0;
+    init();
+    while(1) {
+        if (flags.iCAN){
+            flags.iCAN = 0;
+            can_t canmsg;
+            flags.iErrorBufferOut = !bufferout(&canmsg);
+            if(!flags.iErrorBufferOut)
+                _74hc595_send(canmsg.data[canmsg.length-1]);
+        }
+    }
+    return 0;
 }
 
-ISR(INT1_vect){
-	flags.iCAN = 1;
+ISR(INT0_vect){
+    can_t canmsg;
+    can_get_message(&canmsg);
+    flags.iErrorBufferIn = !bufferin(canmsg);
+    flags.iCAN = 1;
 }
+

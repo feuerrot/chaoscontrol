@@ -41,7 +41,7 @@
 
 
 # MCU name
-MCU = atmega32
+MCU = atmega8
 
 
 # Processor frequency.
@@ -80,7 +80,7 @@ OBJDIR = build
 
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = main.c chaoscontrol.c
+SRC = main.c chaoscontrol.c 74hc595.c buffer.c
 
 
 # List C++ source files here. (C dependencies are automatically generated.)
